@@ -1,0 +1,6 @@
+venv/
+__pycache__/
+canny.png
+final.png
+gauss.png
+img.png

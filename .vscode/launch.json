@@ -1,0 +1,24 @@
+{                                                                                                                                                                                            
+    "configurations": [                                                                                                                                                                      
+        {
+            "name": "Runner",
+            "type": "python",
+            "request": "launch",
+            "module": "main",
+            "args": ["--step", "${input:stepName}"]
+        },
+    ],
+    "inputs": [
+        {
+            "type": "pickString",
+            "id": "stepName",
+            "description": "Please choose the step",
+            "options": [
+                "./mechanicalpart.png",
+                "./mechanical_part.png",
+                "./mechanical-part.png" 
+            ],
+            "default": "./mechanicalpart.png"
+        }
+    ]
+}
