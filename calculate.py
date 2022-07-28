@@ -16,32 +16,60 @@ class contoursGeometry:
         return np.sqrt(distances)
     
     def generate_image(self):
-        cnts = cv2.findContours(np.uint8(self.img_final), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        cnts = cv2.findContours(np.uint8(self.img_final), cv2.RETR_CCOMP,cv2.CHAIN_APPROX_NONE)
         cnts = imutils.grab_contours(cnts)
         (cnts, _) = contours.sort_contours(cnts)
 
+        centersE = []
+        widthsE = []
+        heightsE = []
+
         # loop over the contours individually
         for c in cnts:
-        # if the contour is not sufficiently large, ignore it
-            if cv2.contourArea(c) < 1:
-                continue
-        # compute the rotated bounding box of the contour
-            orig = self.img.copy()
-            box = cv2.minAreaRect(c)
-            box = cv2.cv.BoxPoints(box) if imutils.is_cv2() else cv2.boxPoints(box)
-            box = np.array(box, dtype="int")
-            
-            # order the points in the contour such that they appear
-            # in top-left, top-right, bottom-right, and bottom-left
-            # order, then draw the outline of the rotated bounding
-            # box
-            box = perspective.order_points(box)
-            cv2.drawContours(orig, [box.astype("int")], -1, (0, 255, 0), 5)
-            
-            # loop over the original points and draw them
-            for (x, y) in box:
-                cv2.circle(orig, (int(x), int(y)), 8, (0, 0, 255), -1)
+            approx = cv2.approxPolyDP(c, .03 * cv2.arcLength(c, True), True)
 
+            # if it is a triangle or pentagon
+            if (len(approx) == 3) or (len(approx) == 5):
+                continue
+
+            # if it is either square or rectangle
+            elif len(approx)==4:
+            # compute the rotated bounding box of the contour
+                orig = self.img.copy()
+                box = cv2.minAreaRect(c)
+                box = cv2.cv.BoxPoints(box) if imutils.is_cv2() else cv2.boxPoints(box)
+                box = np.array(box, dtype="int")
+                
+                # order the points in the contour such that they appear
+                # in top-left, top-right, bottom-right, and bottom-left
+                # order, then draw the outline of the rotated bounding
+                # box
+                box = perspective.order_points(box)
+                cv2.drawContours(orig, [box.astype("int")], -1, (0, 255, 0), 5)
+                
+            elif len(approx)==8:
+                area = cv2.contourArea(c)
+                (cx, cy), radius = cv2.minEnclosingCircle(c)
+                circleArea = radius * radius * np.pi
+                if circleArea == area:
+                    cv2.drawContours(orig, [c], 8, (0, 0, 255), 2)
+                else:
+                    ellipse = cv2.fitEllipse(c)
+                    centerE = ellipse[0]
+                    widthE = ellipse[1][0]
+                    heightE = ellipse[1][1]
+                    orig = cv2.ellipse(orig,ellipse,(0, 0, 255), 2)
+                    if len(centersE)>0:
+                        if (round(centerE[0],1) == round(centersE[-1][0], 1)) and (round(centerE[1],1) == round(centersE[-1][1], 1)):
+                            continue
+                        else:
+                            centersE.append(centerE)
+                            widthsE.append(widthE) 
+                            heightsE.append(heightE)
+                    else:
+                        centersE.append(centerE)
+                        widthsE.append(widthE) 
+                        heightsE.append(heightE)
 
         (tl, tr, br, bl) = box
         (tltrX, tltrY) =  (tl[0] + tr[0]) * 0.5, (tl[1] + tr[1]) * 0.5
@@ -50,16 +78,6 @@ class contoursGeometry:
         # followed by the midpoint between the top-righ and bottom-right
         (tlblX, tlblY) = (tl[0] + bl[0]) * 0.5, (tl[1] + bl[1]) * 0.5
         (trbrX, trbrY) = (tr[0] + br[0]) * 0.5, (tr[1] + br[1]) * 0.5
-
-        # draw the midpoints on the image
-        final = cv2.circle(orig, (int(tltrX), int(tltrY)), 5, (255, 0, 0), -1)
-        final = cv2.circle(orig, (int(blbrX), int(blbrY)), 5, (255, 0, 0), -1)
-        final = cv2.circle(orig, (int(tlblX), int(tlblY)), 5, (255, 0, 0), -1)
-        final = cv2.circle(orig, (int(trbrX), int(trbrY)), 5, (255, 0, 0), -1)
-
-        # draw lines between the midpoints
-        final = cv2.line(orig, (int(tltrX), int(tltrY)), (int(blbrX), int(blbrY)), (255, 0, 255), 5)
-        final = cv2.line(orig, (int(tlblX), int(tlblY)), (int(trbrX), int(trbrY)), (255, 0, 255), 5)
 
         # compute the Euclidean distance between the midpoints
         dA = self._euclidean_distance((tltrX, tltrY), (blbrX, blbrY))
@@ -72,8 +90,10 @@ class contoursGeometry:
         dimB = dB / pixelsPerMetric
 
         # draw the object sizes on the image
-        final = cv2.putText(orig, "{:.1f}mm".format(dimB), (int(tltrX), int(tltrY - 15)), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255), 5)
-        final = cv2.putText(orig, "{:.1f}mm".format(dimA), (int(trbrX + 10), int(trbrY)), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255), 5)
+        final = cv2.putText(orig, "{:.1f}mm".format(dimB), (int(tltrX), int(tltrY - 15)), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 5)
+        final = cv2.putText(orig, "{:.1f}mm".format(dimA), (int(trbrX + 10), int(trbrY)), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 5)
+        for i in range(len(widthsE)):
+            final = cv2.putText(orig, "{}, {} mm".format(round(widthsE[i],2), round(heightsE[i],2)), (int(centersE[i][0] - 45), int(centersE[i][1])), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255), 2)
 
         Image.fromarray(self.img).convert('RGB').save('img.png')
         Image.fromarray(final).convert('RGB').save('final.png')
