@@ -21,7 +21,7 @@ if __name__ == '__main__':
     parser.add_argument(
         "--step",
         metavar="stepName",
-        help="[./mechanicalpart.png, ./mechanical_part.png, ./mechanical-part.png]",
+        help="[./mechanicalpart.png, ./mechanical_part.jpg, ./mechanical-part.jpg]",
         type=str,
         required=True,
     )

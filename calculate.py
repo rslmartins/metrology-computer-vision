@@ -48,6 +48,7 @@ class contoursGeometry:
                 cv2.drawContours(orig, [box.astype("int")], -1, (0, 255, 0), 5)
                 
             elif len(approx)==8:
+                orig = self.img.copy()
                 area = cv2.contourArea(c)
                 (cx, cy), radius = cv2.minEnclosingCircle(c)
                 circleArea = radius * radius * np.pi

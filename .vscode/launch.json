@@ -15,8 +15,8 @@
             "description": "Please choose the step",
             "options": [
                 "./mechanicalpart.png",
-                "./mechanical_part.png",
-                "./mechanical-part.png" 
+                "./mechanical_part.jpg",
+                "./mechanical-part.jpg" 
             ],
             "default": "./mechanicalpart.png"
         }
