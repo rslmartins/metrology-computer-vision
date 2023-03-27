@@ -23,6 +23,8 @@ class contoursGeometry:
         centersE = []
         widthsE = []
         heightsE = []
+        selected_circles = []
+        selected_ellipses = []
 
         # loop over the contours individually
         for c in cnts:
@@ -52,14 +54,14 @@ class contoursGeometry:
                 area = cv2.contourArea(c)
                 (cx, cy), radius = cv2.minEnclosingCircle(c)
                 circleArea = radius * radius * np.pi
-                if circleArea == area:
-                    cv2.drawContours(orig, [c], 8, (0, 0, 255), 2)
+                if abs(circleArea**0.5 - area**0.5) <= 2.0:
+                    selected_circles.append([cx, cy, radius])
                 else:
                     ellipse = cv2.fitEllipse(c)
                     centerE = ellipse[0]
                     widthE = ellipse[1][0]
                     heightE = ellipse[1][1]
-                    orig = cv2.ellipse(orig,ellipse,(0, 0, 255), 2)
+                    selected_ellipses.append(ellipse)
                     if len(centersE)>0:
                         if (round(centerE[0],1) == round(centersE[-1][0], 1)) and (round(centerE[1],1) == round(centersE[-1][1], 1)):
                             continue
@@ -94,7 +96,16 @@ class contoursGeometry:
         final = cv2.putText(orig, "{:.1f}mm".format(dimB), (int(tltrX), int(tltrY - 15)), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 5)
         final = cv2.putText(orig, "{:.1f}mm".format(dimA), (int(trbrX + 10), int(trbrY)), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 5)
         for i in range(len(widthsE)):
-            final = cv2.putText(orig, "{}, {} mm".format(round(widthsE[i],2), round(heightsE[i],2)), (int(centersE[i][0] - 45), int(centersE[i][1])), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255), 2)
+            final = cv2.putText(orig, "{}, {} mm".format(round(widthsE[i]/pixelsPerMetric,2), round(heightsE[i]/pixelsPerMetric,2)), (int(centersE[i][0]/pixelsPerMetric - 45), int(centersE[i][1]/pixelsPerMetric)), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255), 2)
 
+        cv2.drawContours(final, [box.astype("int")], -1, (0, 255, 0), 5)
+
+        if selected_ellipses:
+            for ellipse in selected_ellipses:
+                final = cv2.ellipse(orig,ellipse,(0, 0, 255), 2)
+        if selected_circles:
+            for c in selected_circles:
+                cv2.circle(final, (int(c[0]), int(c[1])), int(c[2]), (0, 0, 255), 2)
+                final = cv2.putText(orig, "{:.1f}mm".format(c[2]/pixelsPerMetric), (int(c[0]), int(c[1])), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255), 5)
         Image.fromarray(self.img).convert('RGB').save('img.png')
         Image.fromarray(final).convert('RGB').save('final.png')
