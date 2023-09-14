@@ -4,7 +4,8 @@
             "name": "Runner",
             "type": "python",
             "request": "launch",
-            "module": "main",
+            // "module": "main",
+            "program": "${workspaceFolder}/main.py",
             "args": ["--step", "${input:stepName}"]
         },
     ],
